@@ -1,10 +1,9 @@
 // call is the default function name
 def call (Map configMap){
-    pipeline {
-    // These are pre-build sections
+    pipeline{
         agent {
             node {
-                label 'AGENT-1' //roboshop-java
+                label 'nodejs'
             }
         }
         environment {
@@ -23,8 +22,8 @@ def call (Map configMap){
             stage('Read Version') {
                 steps {
                     script{
-                        def pom = readMavenPom file: 'pom.xml'
-                        appVersion = pom.version
+                        def packageJSON = readJSON file: 'package.json'
+                        appVersion = packageJSON.version
                         echo "app version: ${appVersion}"
                     }
                 }
@@ -33,7 +32,7 @@ def call (Map configMap){
                 steps {
                     script{
                         sh """
-                            mvn clean package
+                            npm install
                         """
                     }
                 }
@@ -47,6 +46,7 @@ def call (Map configMap){
                     }
                 }
             }
+            
             //Here you need to select scanner tool and send the analysis to server
             stage('Sonar Scan'){
                 environment {
@@ -121,6 +121,7 @@ def call (Map configMap){
                     }
                 }
             }
+
             stage('Build Image') {
                 steps {
                     script{
@@ -135,6 +136,7 @@ def call (Map configMap){
                     }
                 }
             }
+            
             stage('Trivy Scan'){
                 steps {
                     script{
@@ -150,6 +152,7 @@ def call (Map configMap){
                     }
                 }
             }
+
             stage('Trigger DEV Deploy') {
                 steps {
                     script {
@@ -165,7 +168,6 @@ def call (Map configMap){
             }
 
         }
-        // This is post build section
         post{
             always{
                 echo 'I will always say Hello again!'
